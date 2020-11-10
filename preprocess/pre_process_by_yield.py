@@ -41,6 +41,12 @@ class HSI_preprocess:
                   data_add_channel.shape)
             data_add_channel[:, :, :102] = data[:, :, :102]
             return data_add_channel
+        if self.name is 'acadia':
+            data_add_channel = np.zeros(self.dst_shape)
+            print('After add channel to origin data, the data shape is: ',
+                  data_add_channel.shape)
+            data_add_channel[:, :, :12] = data[:, :, :12]
+            return data_add_channel
 
     # add zeros to make data easy to mean and var
     def data_add_zero(self, data, patch_size=5):
@@ -127,16 +133,14 @@ class HSI_preprocess:
                     yield x, y, patch.swapaxes(1, 2).swapaxes(0, 1)
 
 
-def set_and_save_indian_pines_5d_data(patch_size=5, is_rotate=True):
-    dataset = HSI.HSIDataSet('indian_pines')
+def set_and_save_acadia_5d_data(patch_size=5, is_rotate=True):
+    dataset = HSI.HSIDataSet('acadia')
     dataset.get_data()
-    dataset.get_labels()
-    print('data shape is: ', dataset.data.shape)  # 145,145,200
-    print('label shape is: ', dataset.labels.shape)  # 145, 145
+    print('data shape is: ', dataset.data.shape)  # 4511, 975, 12
 
-    data, labels = np.array(dataset.data), np.array(dataset.labels)
+    data = np.array(dataset.data)
     dataset_process = HSI_preprocess(
-        name='indian_pines', dst_shape=(145, 145, 224))
+        name='acadia', dst_shape=(4511, 975, 12))
     data = dataset_process.add_channel(data)
     data = dataset_process.data_add_zero(data)
     data_scale_to1 = data / np.max(data)
@@ -147,15 +151,14 @@ def set_and_save_indian_pines_5d_data(patch_size=5, is_rotate=True):
     n_samples = h*w*4 if is_rotate else h*w
     if is_rotate:
         h5file_name = dataset.dir + \
-            '/indian_5d_patch_{}_with_rotate.h5'.format(patch_size)
+            '/acadia_5d_patch_{}_with_rotate.h5'.format(patch_size)
     else:
-        h5file_name = dataset.dir + '/indian_5d_patch_{}.h5'.format(patch_size)
+        h5file_name = dataset.dir + '/acadia_5d_patch_{}.h5'.format(patch_size)
 
     file = h5py.File(h5file_name, 'w')
     file.create_dataset('data', shape=(n_samples, n_channels, patch_size, patch_size, 1),
                         chunks=(1024, n_channels, patch_size, patch_size, 1), dtype=np.float32,
                         maxshape=(None, n_channels, patch_size, patch_size, 1))
-    file.create_dataset('labels', data=labels)
     file.close()
 
     with h5py.File(h5file_name, 'a') as h5f:
@@ -167,5 +170,5 @@ def set_and_save_indian_pines_5d_data(patch_size=5, is_rotate=True):
 
 
 if __name__ == '__main__':
-    set_and_save_indian_pines_5d_data(patch_size=5, is_rotate=False)
+    set_and_save_acadia_5d_data(patch_size=5, is_rotate=False)
     print("hello")

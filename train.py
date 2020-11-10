@@ -47,13 +47,12 @@ def get_predict(model, x_data, shape, batch_size=32, ):
     return x_predict
 
 
-def pre_process_indian():
+def pre_process_acadia():
     h5file_name = os.path.expanduser(
-        './hyperspectral_datas/indian_pines/data/indian_5d_patch_5.h5')
+        './hyperspectral_datas/acadia/data/acadia_5d_patch_5.h5')
     file = h5py.File(h5file_name, 'r')
-    data = file['data'].value
-    labels = file['labels'].value.flatten()
-    return data, labels
+    data = np.array(file['data'])
+    return data
 
 
 def pre_process_indian_for_cls():
@@ -62,8 +61,8 @@ def pre_process_indian_for_cls():
     h5file_name = os.path.expanduser(
         './hyperspectral_datas/indian_pines/data/indian_5d_patch_5.h5')
     file = h5py.File(h5file_name, 'r')
-    X = file['data'].value
-    y = file['labels'].value.flatten()
+    X = np.array(file['data'])
+    y = np.array(file['labels']).flatten()
     X = X[y != 0]
     y = y[y != 0]
     skf = StratifiedKFold(n_splits=10, shuffle=True)
@@ -101,7 +100,7 @@ def train_3DCAE_v3(x_train, x_test, model_name):
 
 
 def train_v3(model_name):
-    x_train, _ = pre_process_indian()
+    x_train = pre_process_acadia()
     X_train, X_test = train_test_split(x_train, train_size=0.9)
     train_3DCAE_v3(X_train, X_test, model_name=model_name)
 
@@ -118,8 +117,8 @@ class ModeTest:
         h5file_name = os.path.expanduser(
             './hyperspectral_datas/indian_pines/data/indian_5d_patch_5.h5')
         file = h5py.File(h5file_name, 'r')
-        data = file['data'].value
-        labels = file['labels'].value.flatten()
+        data = np.array(file['data'])
+        labels = np.array(file['labels']).flatten()
         return data, labels
 
     def get_feature(self):
@@ -154,12 +153,12 @@ if __name__ == '__main__':
                         help='1000 is ok')
     args = parser.parse_args()
     if args.mode == 'train':
-        model_name = './model/trained_by_indian/CAE/DCAE_v2_epoch_'
+        model_name = './model/trained_by_acadia/CAE/DCAE_v2_epoch_'
         train_v3(model_name=model_name)
     elif args.mode == 'test':
-        model_name = './model/trained_by_indian/CAE/DCAE_v2_epoch_'
+        model_name = './model/trained_by_acadia/CAE/DCAE_v2_epoch_'
         test_mode = ModeTest(model_name=model_name,
-                             save_file_name='./data/indian_CAE_feature.h5',
+                             save_file_name='./data/acadia_CAE_feature.h5',
                              epoch=args.epoch)
         test_mode.get_feature()
         test_mode.save_feature_label()

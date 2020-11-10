@@ -1,6 +1,7 @@
 import os
 import scipy.io as sio
 import subprocess
+import spectral
 
 
 def make_if_not_exist(dir=''):
@@ -38,7 +39,7 @@ class DataSet:
             "{}/{}".format(self.dir, self.data_file))
         print(data_file)
         assert os.path.exists(data_file)
-        self.data = sio.loadmat(data_file)[self.data_key]
+        self.data = spectral.open_image(data_file)[:, :, :]
 
     def get_labels(self):
         label_file = os.path.expanduser(
@@ -55,6 +56,9 @@ class HSIDataSetInfo():
         'label_file_name': 'Indian_pines_gt.mat',
         'label_key': 'indian_pines_gt'
     }
+    info['acadia'] = {
+        'data_file_name': 'Acadia_Jun2016_l0s453_anc_L1G.hdr'
+    }
 
 
 class HSIDataSet(DataSet, HSIDataSetInfo):
@@ -66,12 +70,9 @@ class HSIDataSet(DataSet, HSIDataSetInfo):
     def set_info(self):
         self.dataset_info = HSIDataSetInfo.info[self.name]
         self.data_file = self.dataset_info.get('data_file_name')
-        self.data_key = self.dataset_info.get('data_key')
-        self.label_file = self.dataset_info.get('label_file_name')
-        self.label_key = self.dataset_info.get('label_key')
 
 
 if __name__ == '__main__':
-    dataset = HSIDataSet('indian_pines')
+    dataset = HSIDataSet('acadia')
     dataset.get_data()
     dataset.get_labels()
