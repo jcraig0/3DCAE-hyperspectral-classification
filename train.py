@@ -49,7 +49,7 @@ def get_predict(model, x_data, shape, batch_size=32, ):
 
 def pre_process_data(data_name):
     h5file_name = os.path.expanduser(
-        './hyperspectral_datas/{}/data/{}_5d_patch_5.h5'.format(data_name))
+        './hyperspectral_datas/{0}/data/{0}_5d_patch_5.h5'.format(data_name))
     file = h5py.File(h5file_name, 'r')
     data = np.array(file['data'])
     return data
@@ -76,12 +76,11 @@ def pre_process_indian_for_cls():
     return X_train, y_train, train_index, X_test, y_test, test_index
 
 
-def train_3DCAE_v3(x_train, x_test, data_name, model_name):
+def train_3DCAE_v3(x_train, x_test, data_name, save_model_per_epoch, model_name):
     model = DCAE(data_name, weight_decay=0.0005)
     model.compile(loss=keras.losses.MSE, optimizer=keras.optimizers.Adam(lr=0.01),
                   metrics=['MSE'])
     n_epoch = args.epoch
-    save_model_per_epoch = 50
     save_times = n_epoch / save_model_per_epoch
     for i in range(int(save_times)):
         model.fit(x_train, x_train, epochs=save_model_per_epoch, shuffle=True,
@@ -99,35 +98,42 @@ def train_3DCAE_v3(x_train, x_test, data_name, model_name):
             model_name, save_model_per_epoch*(i+1)))
 
 
-def train_v3(data_name, model_name):
+def train_v3(data_name, save_epochs, model_name):
     x_train = pre_process_data(data_name)
     X_train, X_test = train_test_split(x_train, train_size=0.9)
-    train_3DCAE_v3(X_train, X_test, data_name, model_name=model_name)
+    train_3DCAE_v3(X_train, X_test, data_name, save_epochs, model_name=model_name)
 
 
 class ModeTest:
-    def __init__(self, model_name, save_file_name, epoch=40):
-        self.data, self.label = self.pre_process_data()
+    def __init__(self, data_name, model_name, save_file_name, epoch=40):
+        self.data = self.pre_process_data(data_name)
         self.model_name = model_name+'_{}.model'.format(epoch)
         self.epoch = epoch
         self.feature = None
         self.save_file_name = save_file_name
 
-    def pre_process_data(self):
+    def pre_process_data(self, data_name):
         h5file_name = os.path.expanduser(
-            './hyperspectral_datas/indian_pines/data/indian_5d_patch_5.h5')
+            './hyperspectral_datas/{0}/data/{0}_5d_patch_5.h5'.format(data_name))
         file = h5py.File(h5file_name, 'r')
         data = np.array(file['data'])
-        labels = np.array(file['labels']).flatten()
-        return data, labels
+        return data
 
-    def get_feature(self):
-        feature_model = DCAE_fea()
+    def get_feature(self, data_name):
+        feature_model = DCAE_fea(data_name)
         feature_model.load_weights(self.model_name, by_name=True)
         self.feature = get_predict(
             model=feature_model, x_data=self.data, shape=feature_model.predict(self.data[:2]).shape)
         print(self.feature.shape)
-        plt.imshow(self.feature[:, 1, 0, 0, 1].reshape((145, 145)))
+
+        if data_name == 'indian_pines':
+            dst_shape = (145, 145)
+        elif data_name == 'acadia':
+            dst_shape = (4511, 975)
+        else:
+            dst_shape = (1534, 431)
+
+        plt.imshow(self.feature[:dst_shape[0] * dst_shape[1], 1, 0, 0, 1].reshape(dst_shape))
         plt.show()
 
     def get_global_feature(self, global_data):
@@ -137,10 +143,9 @@ class ModeTest:
         plt.imshow(self.feature[:, 1, 0, 0, 1].reshape((145, 145)))
         plt.show()
 
-    def save_feature_label(self):
+    def save_feature(self):
         file = h5py.File(self.save_file_name, 'w')
         file.create_dataset('feature', data=self.feature)
-        file.create_dataset('label', data=self.label)
         file.close()
 
 
@@ -148,19 +153,21 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="train 3DCAE net",
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--data', type=str, default='prospect',
-                        help='Name of data folder')
+                        help='Name of dataset')
     parser.add_argument('--mode', type=str, default='train',
                         help='train, test.')
     parser.add_argument('--epoch', type=int, default=400,
                         help='1000 is ok')
+    parser.add_argument('--save', type=int, default=50,
+                        help='Number of epochs before saving model')
     args = parser.parse_args()
     if args.mode == 'train':
         model_name = './model/trained_by_' + args.data + '/CAE/DCAE_v2_epoch_'
-        train_v3(data_name, model_name=model_name)
+        train_v3(args.data, args.save, model_name=model_name)
     elif args.mode == 'test':
         model_name = './model/trained_by_' + args.data + '/CAE/DCAE_v2_epoch_'
-        test_mode = ModeTest(model_name=model_name,
+        test_mode = ModeTest(args.data, model_name=model_name,
                              save_file_name='./data/' + args.data + '_CAE_feature.h5',
                              epoch=args.epoch)
-        test_mode.get_feature()
-        test_mode.save_feature_label()
+        test_mode.get_feature(args.data)
+        test_mode.save_feature()

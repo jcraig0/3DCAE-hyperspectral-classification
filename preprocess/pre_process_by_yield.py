@@ -42,18 +42,6 @@ class HSI_preprocess:
                   data_add_channel.shape)
             data_add_channel[:, :, :102] = data[:, :, :102]
             return data_add_channel
-        if self.name == 'acadia':
-            data_add_channel = np.zeros(self.dst_shape)
-            print('After add channel to origin data, the data shape is: ',
-                  data_add_channel.shape)
-            data_add_channel[:, :, :12] = data[:, :, :12]
-            return data_add_channel
-        if self.name == 'prospect':
-            data_add_channel = np.zeros(self.dst_shape)
-            print('After add channel to origin data, the data shape is: ',
-                  data_add_channel.shape)
-            data_add_channel[:, :, :12] = data[:, :, :12]
-            return data_add_channel
 
     # add zeros to make data easy to mean and var
     def data_add_zero(self, data, patch_size=5):
@@ -152,11 +140,12 @@ def set_and_save_5d_data(data_name, patch_size=5, is_rotate=True):
     elif data_name == 'acadia':
         dst_shape = (4511, 975, 12)
     else:
-        dst_shape = (4602, 431, 114)
+        dst_shape = (1534, 431, 114)
     
     dataset_process = HSI_preprocess(
         name=data_name, dst_shape=dst_shape)
-    data = dataset_process.add_channel(data)
+    if data_name == 'indian_pines':
+        data = dataset_process.add_channel(data)
     data = dataset_process.data_add_zero(data)
     data_scale_to1 = data / np.max(data)
     data_5d = dataset_process.get_patch_data(
@@ -188,7 +177,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="train 3DCAE net",
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--data', type=str, default='prospect',
-                        help='Name of data folder')
+                        help='Name of dataset')
     data_name = parser.parse_args().data
 
     set_and_save_5d_data(data_name=data_name, patch_size=5, is_rotate=False)

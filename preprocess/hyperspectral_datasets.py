@@ -41,8 +41,11 @@ class DataSet:
         assert os.path.exists(data_file)
         if self.name == 'indian_pines':
             self.data = sio.loadmat(data_file)[self.data_key]
-        else:
+        elif self.name == 'acadia':
             self.data = spectral.open_image(data_file)[:, :, :]
+        else:
+            # Keep only the middle third of the rows
+            self.data = spectral.open_image(data_file)[1534:-1534, :, :]
 
     def get_labels(self):
         label_file = os.path.expanduser(
