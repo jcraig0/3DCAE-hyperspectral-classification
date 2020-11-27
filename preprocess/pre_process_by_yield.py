@@ -14,7 +14,7 @@ class HSI_preprocess:
         self.dst_shape = dst_shape
 
     def add_channel(self, data):
-        if self.name is 'indian_pines':
+        if self.name == 'indian_pines':
             data_add_channel = np.zeros(self.dst_shape)
             print('After add channel to origin data, the data shape is: ',
                   data_add_channel.shape)
@@ -22,7 +22,7 @@ class HSI_preprocess:
             data_add_channel[:, :, 109:149] = data[:, :, 104:144]
             data_add_channel[:, :, 164:219] = data[:, :, 145:200]
             return data_add_channel
-        if self.name is 'salina':
+        if self.name == 'salina':
             data_add_channel = np.zeros(self.dst_shape)
             print('After add channel to origin data, the data shape is: ',
                   data_add_channel.shape)
@@ -30,25 +30,25 @@ class HSI_preprocess:
             data_add_channel[:, :, 112:153] = data[:, :, 107:148]
             data_add_channel[:, :, 167:223] = data[:, :, 148:204]
             return data_add_channel
-        if self.name is 'paviau':
+        if self.name == 'paviau':
             data_add_channel = np.zeros(self.dst_shape)
             print('After add channel to origin data, the data shape is: ',
                   data_add_channel.shape)
             data_add_channel[:, :, :103] = data[:, :, :103]
             return data_add_channel
-        if self.name is 'pavia':
+        if self.name == 'pavia':
             data_add_channel = np.zeros(self.dst_shape)
             print('After add channel to origin data, the data shape is: ',
                   data_add_channel.shape)
             data_add_channel[:, :, :102] = data[:, :, :102]
             return data_add_channel
-        if self.name is 'acadia':
+        if self.name == 'acadia':
             data_add_channel = np.zeros(self.dst_shape)
             print('After add channel to origin data, the data shape is: ',
                   data_add_channel.shape)
             data_add_channel[:, :, :12] = data[:, :, :12]
             return data_add_channel
-        if self.name is 'prospect':
+        if self.name == 'prospect':
             data_add_channel = np.zeros(self.dst_shape)
             print('After add channel to origin data, the data shape is: ',
                   data_add_channel.shape)
