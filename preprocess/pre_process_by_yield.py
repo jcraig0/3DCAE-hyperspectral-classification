@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import hyperspectral_datasets
 import hyperspectral_datasets as HSI
 from scipy.ndimage.interpolation import rotate
+import argparse
 
 
 class HSI_preprocess:
@@ -42,6 +43,12 @@ class HSI_preprocess:
             data_add_channel[:, :, :102] = data[:, :, :102]
             return data_add_channel
         if self.name is 'acadia':
+            data_add_channel = np.zeros(self.dst_shape)
+            print('After add channel to origin data, the data shape is: ',
+                  data_add_channel.shape)
+            data_add_channel[:, :, :12] = data[:, :, :12]
+            return data_add_channel
+        if self.name is 'prospect':
             data_add_channel = np.zeros(self.dst_shape)
             print('After add channel to origin data, the data shape is: ',
                   data_add_channel.shape)
@@ -133,14 +140,22 @@ class HSI_preprocess:
                     yield x, y, patch.swapaxes(1, 2).swapaxes(0, 1)
 
 
-def set_and_save_acadia_5d_data(patch_size=5, is_rotate=True):
-    dataset = HSI.HSIDataSet('acadia')
+def set_and_save_5d_data(data_name, patch_size=5, is_rotate=True):
+    dataset = HSI.HSIDataSet(data_name)
     dataset.get_data()
-    print('data shape is: ', dataset.data.shape)  # 4511, 975, 12
+    print('data shape is: ', dataset.data.shape)
 
     data = np.array(dataset.data)
+
+    if data_name == 'indian_pines':
+        dst_shape = (145, 145, 224)
+    elif data_name == 'acadia':
+        dst_shape = (4511, 975, 12)
+    else:
+        dst_shape = (4602, 431, 114)
+    
     dataset_process = HSI_preprocess(
-        name='acadia', dst_shape=(4511, 975, 12))
+        name=data_name, dst_shape=dst_shape)
     data = dataset_process.add_channel(data)
     data = dataset_process.data_add_zero(data)
     data_scale_to1 = data / np.max(data)
@@ -151,9 +166,9 @@ def set_and_save_acadia_5d_data(patch_size=5, is_rotate=True):
     n_samples = h*w*4 if is_rotate else h*w
     if is_rotate:
         h5file_name = dataset.dir + \
-            '/acadia_5d_patch_{}_with_rotate.h5'.format(patch_size)
+            '/{}_5d_patch_{}_with_rotate.h5'.format(data_name, patch_size)
     else:
-        h5file_name = dataset.dir + '/acadia_5d_patch_{}.h5'.format(patch_size)
+        h5file_name = dataset.dir + '/{}_5d_patch_{}.h5'.format(data_name, patch_size)
 
     file = h5py.File(h5file_name, 'w')
     file.create_dataset('data', shape=(n_samples, n_channels, patch_size, patch_size, 1),
@@ -170,5 +185,11 @@ def set_and_save_acadia_5d_data(patch_size=5, is_rotate=True):
 
 
 if __name__ == '__main__':
-    set_and_save_acadia_5d_data(patch_size=5, is_rotate=False)
+    parser = argparse.ArgumentParser(description="train 3DCAE net",
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('--data', type=str, default='prospect',
+                        help='Name of data folder')
+    data_name = parser.parse_args().data
+
+    set_and_save_5d_data(data_name=data_name, patch_size=5, is_rotate=False)
     print("hello")

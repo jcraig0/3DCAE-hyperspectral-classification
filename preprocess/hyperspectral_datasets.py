@@ -39,7 +39,10 @@ class DataSet:
             "{}/{}".format(self.dir, self.data_file))
         print(data_file)
         assert os.path.exists(data_file)
-        self.data = spectral.open_image(data_file)[:, :, :]
+        if self.name == 'indian_pines':
+            self.data = sio.loadmat(data_file)[self.data_key]
+        else:
+            self.data = spectral.open_image(data_file)[:, :, :]
 
     def get_labels(self):
         label_file = os.path.expanduser(
@@ -57,7 +60,12 @@ class HSIDataSetInfo():
         'label_key': 'indian_pines_gt'
     }
     info['acadia'] = {
-        'data_file_name': 'Acadia_Jun2016_l0s453_anc_L1G.hdr'
+        'data_file_name': 'Acadia_Jun2016_l0s453_anc_L1G.hdr',
+        'data_key': ''
+    }
+    info['prospect'] = {
+        'data_file_name': 'Prospect_Hill_Jun2012_5_at-sensor_refl_L1G.hdr',
+        'data_key': ''
     }
 
 
@@ -70,9 +78,10 @@ class HSIDataSet(DataSet, HSIDataSetInfo):
     def set_info(self):
         self.dataset_info = HSIDataSetInfo.info[self.name]
         self.data_file = self.dataset_info.get('data_file_name')
+        self.data_key = self.dataset_info.get('data_key')
 
 
 if __name__ == '__main__':
-    dataset = HSIDataSet('acadia')
+    dataset = HSIDataSet('indian_pines')
     dataset.get_data()
     dataset.get_labels()
