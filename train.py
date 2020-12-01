@@ -47,9 +47,10 @@ def get_predict(model, x_data, shape, batch_size=32, ):
     return x_predict
 
 
-def pre_process_data(data_name):
+def pre_process_data(data_name, swath):
     h5file_name = os.path.expanduser(
-        './hyperspectral_datas/{0}/data/{0}_5d_patch_5.h5'.format(data_name))
+        './hyperspectral_datas/{0}/data/{0}{1}_5d_patch_5.h5'.format(data_name,
+            '_' + str(swath) if swath else ''))
     file = h5py.File(h5file_name, 'r')
     data = np.array(file['data'])
     return data
@@ -98,23 +99,24 @@ def train_3DCAE_v3(x_train, x_test, data_name, save_model_per_epoch, model_name)
             model_name, save_model_per_epoch*(i+1)))
 
 
-def train_v3(data_name, save_epochs, model_name):
-    x_train = pre_process_data(data_name)
+def train_v3(data_name, swath, save_epochs, model_name):
+    x_train = pre_process_data(data_name, swath)
     X_train, X_test = train_test_split(x_train, train_size=0.9)
     train_3DCAE_v3(X_train, X_test, data_name, save_epochs, model_name=model_name)
 
 
 class ModeTest:
-    def __init__(self, data_name, model_name, save_file_name, epoch=40):
-        self.data = self.pre_process_data(data_name)
+    def __init__(self, data_name, swath, model_name, save_file_name, epoch=40):
+        self.data = self.pre_process_data(data_name, swath)
         self.model_name = model_name+'_{}.model'.format(epoch)
         self.epoch = epoch
         self.feature = None
         self.save_file_name = save_file_name
 
-    def pre_process_data(self, data_name):
+    def pre_process_data(self, data_name, swath):
         h5file_name = os.path.expanduser(
-            './hyperspectral_datas/{0}/data/{0}_5d_patch_5.h5'.format(data_name))
+            './hyperspectral_datas/{0}/data/{0}{1}_5d_patch_5.h5'.format(data_name,
+                '_' + str(swath) if swath else ''))
         file = h5py.File(h5file_name, 'r')
         data = np.array(file['data'])
         return data
@@ -131,7 +133,7 @@ class ModeTest:
         elif data_name == 'acadia':
             dst_shape = (4511, 975)
         else:
-            dst_shape = (1534, 431)
+            dst_shape = (1500, [431, 436, 451, 483, 459, 487, 524, 566][int((args.swath - 5) / 2)])
 
         plt.imshow(self.feature[:dst_shape[0] * dst_shape[1], 1, 0, 0, 1].reshape(dst_shape))
         plt.show()
@@ -154,20 +156,24 @@ if __name__ == '__main__':
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--data', type=str, default='prospect',
                         help='Name of dataset')
+    parser.add_argument('--swath', type=int,
+                        help='Hyperspectral data swath number')
     parser.add_argument('--mode', type=str, default='train',
                         help='train, test.')
     parser.add_argument('--epoch', type=int, default=400,
                         help='1000 is ok')
-    parser.add_argument('--save', type=int, default=50,
+    parser.add_argument('--save', type=int, default=5,
                         help='Number of epochs before saving model')
     args = parser.parse_args()
+
+    model_name = './model/trained_by_' + args.data + \
+        '/CAE/DCAE_v2_{}epoch_'.format('swath_{}_'.format(args.swath) if args.swath else '')
     if args.mode == 'train':
-        model_name = './model/trained_by_' + args.data + '/CAE/DCAE_v2_epoch_'
-        train_v3(args.data, args.save, model_name=model_name)
+        train_v3(args.data, args.swath, args.save, model_name=model_name)
     elif args.mode == 'test':
-        model_name = './model/trained_by_' + args.data + '/CAE/DCAE_v2_epoch_'
-        test_mode = ModeTest(args.data, model_name=model_name,
-                             save_file_name='./data/' + args.data + '_CAE_feature.h5',
+        test_mode = ModeTest(args.data, args.swath, model_name=model_name,
+                             save_file_name='./data/' + args.data + '{}_CAE_feature.h5'
+                             .format('_' + str(args.swath) if args.swath else ''),
                              epoch=args.epoch)
         test_mode.get_feature(args.data)
         test_mode.save_feature()

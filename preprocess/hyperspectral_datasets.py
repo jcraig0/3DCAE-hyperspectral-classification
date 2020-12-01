@@ -34,9 +34,10 @@ class DataSet:
         label_file = "{}/{}".format(self.dir, label_file_name)
         assert os.path.exists(label_file)
 
-    def get_data(self):
+    def get_data(self, swath):
         data_file = os.path.expanduser(
-            "{}/{}".format(self.dir, self.data_file))
+            "{}/{}".format(self.dir, self.data_file.format(swath)
+                           if swath else self.data_file))
         print(data_file)
         assert os.path.exists(data_file)
         if self.name == 'indian_pines':
@@ -44,8 +45,8 @@ class DataSet:
         elif self.name == 'acadia':
             self.data = spectral.open_image(data_file)[:, :, :]
         else:
-            # Keep only the middle third of the rows
-            self.data = spectral.open_image(data_file)[1534:-1534, :, :]
+            # Keep only a subset of the rows that overlaps the ground truth
+            self.data = spectral.open_image(data_file)[2000:3500, :, :]
 
     def get_labels(self):
         label_file = os.path.expanduser(
@@ -67,7 +68,7 @@ class HSIDataSetInfo():
         'data_key': ''
     }
     info['prospect'] = {
-        'data_file_name': 'Prospect_Hill_Jun2012_5_at-sensor_refl_L1G.hdr',
+        'data_file_name': 'Prospect_Hill_Jun2012_{}_at-sensor_refl_L1G.hdr',
         'data_key': ''
     }
 

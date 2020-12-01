@@ -128,22 +128,14 @@ class HSI_preprocess:
                     yield x, y, patch.swapaxes(1, 2).swapaxes(0, 1)
 
 
-def set_and_save_5d_data(data_name, patch_size=5, is_rotate=True):
+def set_and_save_5d_data(data_name, swath, patch_size=5, is_rotate=True):
     dataset = HSI.HSIDataSet(data_name)
-    dataset.get_data()
+    dataset.get_data(swath)
     print('data shape is: ', dataset.data.shape)
 
     data = np.array(dataset.data)
-
-    if data_name == 'indian_pines':
-        dst_shape = (145, 145, 224)
-    elif data_name == 'acadia':
-        dst_shape = (4511, 975, 12)
-    else:
-        dst_shape = (1534, 431, 114)
-    
-    dataset_process = HSI_preprocess(
-        name=data_name, dst_shape=dst_shape)
+    dataset_process = HSI_preprocess(name=data_name,
+        dst_shape=(145, 145, 224) if data_name == 'indian_pines' else data.shape)
     if data_name == 'indian_pines':
         data = dataset_process.add_channel(data)
     data = dataset_process.data_add_zero(data)
@@ -157,7 +149,8 @@ def set_and_save_5d_data(data_name, patch_size=5, is_rotate=True):
         h5file_name = dataset.dir + \
             '/{}_5d_patch_{}_with_rotate.h5'.format(data_name, patch_size)
     else:
-        h5file_name = dataset.dir + '/{}_5d_patch_{}.h5'.format(data_name, patch_size)
+        h5file_name = dataset.dir + '/{}{}_5d_patch_{}.h5'.format(
+            data_name, '_' + str(swath) if swath else '', patch_size)
 
     file = h5py.File(h5file_name, 'w')
     file.create_dataset('data', shape=(n_samples, n_channels, patch_size, patch_size, 1),
@@ -178,7 +171,9 @@ if __name__ == '__main__':
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--data', type=str, default='prospect',
                         help='Name of dataset')
-    data_name = parser.parse_args().data
+    parser.add_argument('--swath', type=int,
+                        help='Hyperspectral data swath number')
+    args = parser.parse_args()
 
-    set_and_save_5d_data(data_name=data_name, patch_size=5, is_rotate=False)
+    set_and_save_5d_data(data_name=args.data, swath=args.swath, patch_size=5, is_rotate=False)
     print("hello")

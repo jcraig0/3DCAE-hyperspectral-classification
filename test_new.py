@@ -10,6 +10,8 @@ parser = argparse.ArgumentParser(description="test 3DCAE net",
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('--data', type=str, default='prospect',
                     help='Name of dataset')
+parser.add_argument('--swath', type=int,
+                    help='Hyperspectral data swath number')
 args = parser.parse_args()
 
 if args.data == 'indian_pines':
@@ -17,9 +19,10 @@ if args.data == 'indian_pines':
 elif args.data == 'acadia':
     dst_shape = [4511, 975]
 else:
-    dst_shape = [1534, 431]
+    dst_shape = [1500, [431, 436, 451, 483, 459, 487, 524, 566][int((args.swath - 5) / 2)]]
 
-features = h5py.File('./data/' + args.data + '_CAE_feature.h5', 'r')['feature']
+features = h5py.File('./data/' + args.data + \
+    '{}_CAE_feature.h5'.format('_' + str(args.swath) if args.swath else ''), 'r')['feature']
 features = np.squeeze(features)[:dst_shape[0] * dst_shape[1], :, :]
 features = features.reshape(dst_shape + list(features.shape[-2:]))
 print(features.shape)
